@@ -1,8 +1,8 @@
-import { Recommendation } from "@prisma/client";
+import { Recommendations } from "@prisma/client";
 import { recommendationRepository } from "../repositories/recommendationRepository.js";
 import { conflictError, notFoundError } from "../utils/errorUtils.js";
 
-export type CreateRecommendationData = Omit<Recommendation, "id" | "score">;
+export type CreateRecommendationData = Omit<Recommendations, "id" | "score">;
 
 async function insert(createRecommendationData: CreateRecommendationData) {
   const existingRecommendation = await recommendationRepository.findByName(
@@ -34,8 +34,10 @@ async function downvote(id: number) {
 }
 
 async function getByIdOrFail(id: number) {
+
   const recommendation = await recommendationRepository.find(id);
   if (!recommendation) throw notFoundError();
+  
 
   return recommendation;
 }

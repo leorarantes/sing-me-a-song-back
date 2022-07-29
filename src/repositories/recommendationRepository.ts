@@ -3,7 +3,7 @@ import { prisma } from "../database.js";
 import { CreateRecommendationData } from "../services/recommendationsService.js";
 
 async function create(createRecommendationData: CreateRecommendationData) {
-  await prisma.recommendation.create({
+  await prisma.recommendations.create({
     data: createRecommendationData,
   });
 }
@@ -16,7 +16,7 @@ interface FindAllWhere {
 function findAll(findAllWhere?: FindAllWhere) {
   const filter = getFindAllFilter(findAllWhere);
 
-  return prisma.recommendation.findMany({
+  return prisma.recommendations.findMany({
     where: filter,
     orderBy: { id: "desc" },
     take: 10
@@ -24,7 +24,7 @@ function findAll(findAllWhere?: FindAllWhere) {
 }
 
 function getAmountByScore(take: number) {
-  return prisma.recommendation.findMany({
+  return prisma.recommendations.findMany({
     orderBy: { score: "desc" },
     take,
   });
@@ -32,7 +32,7 @@ function getAmountByScore(take: number) {
 
 function getFindAllFilter(
   findAllWhere?: FindAllWhere
-): Prisma.RecommendationWhereInput {
+): Prisma.RecommendationsWhereInput {
   if (!findAllWhere) return {};
 
   const { score, scoreFilter } = findAllWhere;
@@ -43,30 +43,35 @@ function getFindAllFilter(
 }
 
 function find(id: number) {
-  return prisma.recommendation.findUnique({
+  return prisma.recommendations.findUnique({
     where: { id },
   });
 }
 
 function findByName(name: string) {
-  return prisma.recommendation.findUnique({
+  return prisma.recommendations.findUnique({
     where: { name },
   });
 }
 
 async function updateScore(id: number, operation: "increment" | "decrement") {
-  return prisma.recommendation.update({
+  return prisma.recommendations.update({
     where: { id },
     data: {
-      score: { [operation]: 1 },
-    },
+      score: { [operation]: 1 }
+    }
   });
 }
 
 async function remove(id: number) {
-  await prisma.recommendation.delete({
+  await prisma.recommendations.delete({
     where: { id },
   });
+}
+
+async function findAllNoFilter() {
+  const recommendations = await prisma.recommendations.findMany();
+  return recommendations;
 }
 
 export const recommendationRepository = {
@@ -77,4 +82,5 @@ export const recommendationRepository = {
   updateScore,
   getAmountByScore,
   remove,
+  findAllNoFilter
 };
