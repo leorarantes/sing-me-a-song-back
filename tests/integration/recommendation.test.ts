@@ -53,6 +53,15 @@ describe("GET /recommendations", () => {
     });
 });
 
+describe("GET /recommendations/top/:amount", () => {
+    it("get top recommendations", async () => {
+        const validAmount = (Math.random() * 10).toFixed(0);
+        const response = await agent.get(`/recommendations/top/${validAmount}`);
+        const validation = recommendationEntireSchema.validate(response.body[0]);
+        expect(validation.error).toBe(undefined);
+    });
+});
+
 describe("GET /recommendations/:id", () => {
     it("given valid id, get recommendation", async () => {
         const validId = await getLastRecommendationId();
