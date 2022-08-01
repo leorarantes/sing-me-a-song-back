@@ -74,7 +74,7 @@ async function findAllNoFilter() {
   return recommendations;
 }
 
-export const recommendationRepository = {
+export default {
   create,
   findAll,
   find,
