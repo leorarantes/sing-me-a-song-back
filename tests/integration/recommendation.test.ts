@@ -1,9 +1,10 @@
 import supertest from 'supertest';
 
-import app from "../src/app";
-import { prisma } from "../src/database.js";
-import { recommendationRepository } from "../src/repositories/recommendationRepository.js";
-import { recommendationEntireSchema } from "../src/schemas/recommendationsSchemas.js";
+import app from "../../src/app";
+import { prisma } from "../../src/database.js";
+import { recommendationRepository } from "../../src/repositories/recommendationRepository.js";
+import { recommendationEntireSchema } from "../../src/schemas/recommendationsSchemas.js";
+import { getLastRecommendationId } from "../factories/recommendationFactory.js";
 
 const agent = supertest(app);
 
@@ -42,48 +43,67 @@ describe("POST /recommendations", () => {
 
 describe("GET /recommendations", () => {
     it("get recommendations", async () => {
+        await recommendationRepository.create({
+            name: "Chitãozinho E Xororó - Evidências",
+            youtubeLink: "https://www.youtube.com/watch?v=ePjtnSPFWK8&ab_channel=CHXVEVO"
+        });
         const response = await agent.get(`/recommendations`);
         const validation = recommendationEntireSchema.validate(response.body[0]);
         expect(validation.error).toBe(undefined);
     });
 });
 
+describe("GET /recommendations/:id", () => {
+    it("given valid id, get recommendation", async () => {
+        const validId = await getLastRecommendationId();
+        const response = await agent.get(`/recommendations/${validId}`);
+        const validation = recommendationEntireSchema.validate(response.body);
+        expect(validation.error).toBe(undefined);
+    });
+
+    it("given invalid id, fail to get recommendation", async () => {
+        const invalidId = await getLastRecommendationId() + 1;
+        const response = await agent.get(`/recommendations/${invalidId}`);
+        expect(response.status).toBe(404);
+    });
+});
+
 describe("POST /recommendations/:id/upvote", () => {
     it("given valid id, upvote", async () => {
-        const recommendations = await recommendationRepository.findAllNoFilter();
-        const response = await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/upvote`);
+        const validId = await getLastRecommendationId();
+        const response = await agent.post(`/recommendations/${validId}/upvote`);
         expect(response.status).toBe(200);
     });
 
     it("given invalid id, fail to upvote", async () => {
-        const recommendations = await recommendationRepository.findAllNoFilter();
+        const invalidId = await getLastRecommendationId() + 1;
         const response = await agent
-            .post(`/recommendations/${recommendations[recommendations.length-1].id+1}/upvote`);
+            .post(`/recommendations/${invalidId}/upvote`);
         expect(response.status).toBe(404);
     });
 });
 
 describe("POST /recommendations/:id/downvote", () => {
     it("given valid id, downvote", async () => {
-        const recommendations = await recommendationRepository.findAllNoFilter();
-        const response = await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        const validId = await getLastRecommendationId();
+        const response = await agent.post(`/recommendations/${validId}/downvote`);
         expect(response.status).toBe(200);
     });
 
     it("given invalid id, fail to downvote", async () => {
-        const recommendations = await recommendationRepository.findAllNoFilter();
-        const response = await agent.post(`/recommendations/${recommendations[recommendations.length-1].id+1}/downvote`);
+        const invalidId = await getLastRecommendationId() + 1;
+        const response = await agent.post(`/recommendations/${invalidId}/downvote`);
         expect(response.status).toBe(404);
     });
 
     it("if score < -5, fail to downvote", async () => {
-        const recommendations = await recommendationRepository.findAllNoFilter();
+        const lastRecommendationId = await getLastRecommendationId();
 
-        for(let i=0; i<6; i++) await recommendationRepository.updateScore(recommendations[recommendations.length-1].id, "decrement");
+        for(let i=0; i<6; i++) await recommendationRepository.updateScore(lastRecommendationId, "decrement");
 
-        await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        await agent.post(`/recommendations/${lastRecommendationId}/downvote`);
 
-        const response = await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        const response = await agent.post(`/recommendations/${lastRecommendationId}/downvote`);
         expect(response.status).toBe(404);
     });
 });
