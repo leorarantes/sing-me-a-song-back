@@ -77,8 +77,7 @@ describe("POST /recommendations/:id/upvote", () => {
 
     it("given invalid id, fail to upvote", async () => {
         const invalidId = await getLastRecommendationId() + 1;
-        const response = await agent
-            .post(`/recommendations/${invalidId}/upvote`);
+        const response = await agent.post(`/recommendations/${invalidId}/upvote`);
         expect(response.status).toBe(404);
     });
 });
@@ -108,10 +107,16 @@ describe("POST /recommendations/:id/downvote", () => {
     });
 });
 
+describe("GET /recommendations/random", () => {
+    it("if any recommendations exists, get random recommendations", async () => {
+        const response = await agent.get(`/recommendations/random`);
+        const validation = recommendationEntireSchema.validate(response.body[0]);
+        expect(validation.error).toBe(undefined);
+    });
 
-
-
-
-afterAll(async () => {
-    await prisma.$executeRaw`DELETE FROM recommendations WHERE name = 'Falamansa - Xote dos Milagres'`;
+    it("if no recommendations exists, fail to get random recommendations", async () => {
+        await prisma.$executeRaw`DELETE FROM recommendations WHERE name = 'Falamansa - Xote dos Milagres'`;
+        const response = await agent.get(`/recommendations/random`);
+        expect(response.status).toBe(404);
+    });
 });
