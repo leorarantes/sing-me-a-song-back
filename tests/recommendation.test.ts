@@ -59,6 +59,31 @@ describe("POST /recommendations/:id/upvote", () => {
     });
 });
 
+describe("POST /recommendations/:id/downvote", () => {
+
+    it("given valid id, downvote", async () => {
+        const recommendations = await recommendationRepository.findAllNoFilter();
+        const response = await agent
+            .post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        expect(response.status).toBe(200);
+    });
+
+    it("given invalid id, fail to downvote", async () => {
+        const recommendations = await recommendationRepository.findAllNoFilter();
+        const response = await agent
+            .post(`/recommendations/${recommendations[recommendations.length-1].id+1}/downvote`);
+        expect(response.status).toBe(404);
+    });
+
+    it("if score < -5, fail to downvote", async () => {
+        const recommendations = await recommendationRepository.findAllNoFilter();
+        for(let i=0; i<6; i++) await recommendationRepository.updateScore(recommendations[recommendations.length-1].id, "decrement");
+        await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        const response = await agent.post(`/recommendations/${recommendations[recommendations.length-1].id}/downvote`);
+        expect(response.status).toBe(404);
+    });
+});
+
 afterAll(async () => {
     await prisma.$executeRaw`DELETE FROM recommendations WHERE name = 'Falamansa - Xote dos Milagres'`;
 });
